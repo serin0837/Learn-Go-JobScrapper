@@ -24,11 +24,20 @@ var baseURL string = "https://kr.indeed.com/jobs?q=python&limit=50"
 
 func main(){
 	var jobs []extractedJob
+	//1.make channel-main
+	c := make(chan []extractedJob)
 	totalPages := getPages()
 	//fmt.Println(totalPages)//5
 	//hit the url 
 	for i := 0; i < totalPages; i++{
-		extractedJobs := getPage(i)
+		//2. go routine-main
+		go getPage(i, c)
+		
+
+	}
+	//5. recive message of mainc-main
+	for i := 0 ; i<totalPages;i++ {
+		extractedJobs := <-c
 		jobs = append(jobs, extractedJobs...)
 	}
 	//fmt.Println(jobs)
@@ -63,14 +72,17 @@ func writeJobs(jobs []extractedJob){
 
 
 //create get page func
-func getPage(page int) []extractedJob {
+//3. channel-main
+func getPage(page int, mainC chan<- []extractedJob) {
 	//create empty jobs
 	var jobs []extractedJob
+	//1. make channel
+	c := make(chan extractedJob)
 
 	pageURL := baseURL + "&start=" + strconv.Itoa(page * 50)
 	//page*50 is number so we have to use pacakage
 	//print its wokring 
-	//fmt.Println("Resuqesiting", pageURL)
+	fmt.Println("Resuqesiting", pageURL)
 	res, err := http.Get(pageURL)
 	checkErr(err)
 	checkCode(res)
@@ -93,21 +105,28 @@ func getPage(page int) []extractedJob {
 		// location := cleanString(s.Find(".sjcl").Text())
 		// fmt.Println(id, title, location)
 		
-		//separate extractjob function 
-		job := extractJob(card)
-		jobs = append(jobs, job)
+		//separate extractjob function //4. add go 
+		go extractJob(card, c)// 2. add channel
+	
+		//jobs = append(jobs, job)
 	})
-	return jobs
+		//5. recevie channel message 
+		for i :=0 ; i <searchCards.Length(); i++{
+			job := <-c
+			jobs = append(jobs, job)
+		}
+		//4. not retun job we going to send job to main chaneel -main
+	mainC <- jobs
 }
-//crete function taht only extracting job
-func extractJob(card *goquery.Selection) extractedJob {
+//crete function taht only extracting job//3. c chan<-extractedJob// get rid of return value
+func extractJob(card *goquery.Selection, c chan<- extractedJob){
 	id, _ := card.Attr("data-jk")
 	title := cleanString(card.Find(".title>a").Text())
 	location := cleanString(card.Find(".sjcl").Text())
 	salary := cleanString(card.Find(".salaryText").Text())
 	summary := cleanString(card.Find(".summary").Text()) 
 	//fmt.Println(id, title, location, salary, summary)
-	return extractedJob{
+	c <- extractedJob{
 		id:id, 
 		title: title, 
 		location: location, 

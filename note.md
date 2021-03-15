@@ -271,7 +271,12 @@ use go guery
 2. visit each page with getpage
 3. getpage return all the job in that page
 4. in main fuc we apeend jobs with extractedJobs
+5. write job in csv file and I can check
 
-
-
-5. write job
+6. go routine concorrency 
+getpages then we do get page (one after)
+byut we want to getpage in same time and extract jobs(now one by one but we want all together)
+- go rouitne in getpage and go routine each job extraction so 50 job * 5 page 250 go routines
+- need to have two channel main<->getpage, getpage<->extractjob
+- start with smallest one
+- in getpage create channel
