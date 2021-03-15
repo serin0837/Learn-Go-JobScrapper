@@ -280,3 +280,9 @@ byut we want to getpage in same time and extract jobs(now one by one but we want
 - need to have two channel main<->getpage, getpage<->extractjob
 - start with smallest one
 - in getpage create channel
+
+
+## create server 
+- go echo
+- change main to scrapper.go and create main.go 
+- install go get github.com/labstack/echo/
