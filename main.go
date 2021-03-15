@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"github.com/PuerkitoBio/goquery"
 	"fmt"
+	"os"
 	"log"
 	"strconv"
 	"strings"
+	"encoding/csv"
 )
 
 //create struct
@@ -29,8 +31,36 @@ func main(){
 		extractedJobs := getPage(i)
 		jobs = append(jobs, extractedJobs...)
 	}
-	fmt.Println(jobs)
+	//fmt.Println(jobs)
+	writeJobs(jobs)
+	fmt.Println("Done")
 }
+
+//write jobs /save in csv file
+
+func writeJobs(jobs []extractedJob){
+	//csv package
+	file, err := os.Create("jobs.csv")
+	checkErr(err)
+
+	w := csv.NewWriter(file)
+	//write data to that file 
+	defer w.Flush()
+
+	//headers
+	headers := []string{"ID", "Title", "Location", "Salary", "Summary"}
+
+	wErr := w.Write(headers)
+	checkErr(wErr)
+
+	//for loop job from jobs
+	for _, job := range jobs {
+		jobSlice := []string{"https://kr.indeed.com/viewjobs?jk="+job.id, job.title, job.location, job.salary, job.summary}
+		jwErr := w.Write(jobSlice)
+		checkErr(jwErr)
+	}
+}
+
 
 //create get page func
 func getPage(page int) []extractedJob {

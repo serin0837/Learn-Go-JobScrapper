@@ -264,3 +264,14 @@ intall go get github.com/PuerkitoBio/goquery
 use go guery 
 
 - how go query works, we need to continuosly check the error so create checkerror func
+
+
+## reacap
+1. getpages totalpage that we should visit
+2. visit each page with getpage
+3. getpage return all the job in that page
+4. in main fuc we apeend jobs with extractedJobs
+
+
+
+5. write job
