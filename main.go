@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 )
 
 //create struct
@@ -20,16 +21,22 @@ type extractedJob struct {
 var baseURL string = "https://kr.indeed.com/jobs?q=python&limit=50"
 
 func main(){
+	var jobs []extractedJob
 	totalPages := getPages()
 	//fmt.Println(totalPages)//5
 	//hit the url 
 	for i := 0; i < totalPages; i++{
-		getPage(i)
+		extractedJobs := getPage(i)
+		jobs = append(jobs, extractedJobs...)
 	}
+	fmt.Println(jobs)
 }
 
 //create get page func
-func getPage(page int){
+func getPage(page int) []extractedJob {
+	//create empty jobs
+	var jobs []extractedJob
+
 	pageURL := baseURL + "&start=" + strconv.Itoa(page * 50)
 	//page*50 is number so we have to use pacakage
 	//print its wokring 
@@ -43,21 +50,47 @@ func getPage(page int){
 	checkErr(err)
 
 	searchCards := doc.Find(".jobsearch-SerpJobCard")
-	searchCards.Each(func(i int, s *goquery.Selection){
+	searchCards.Each(func(i int, card *goquery.Selection){
 		//each card I want to extract job
 		//s is each card (div)
 		//each card have id(data-jk)
 		//attr return two values, actual value and existence
-		id, _ := s.Attr("data-jk")
-		//print all of id
-		fmt.Println(id)
-		title := s.Find(".title>a").Text()
+		// id, _ := s.Attr("data-jk")
+		// //print all of id
+		// fmt.Println(id)
+		// title := cleanString(s.Find(".title>a").Text())
 		
-		location := s.Find(".sjcl").Text()
-		fmt.Println(title, location)
-		//clean white space
+		// location := cleanString(s.Find(".sjcl").Text())
+		// fmt.Println(id, title, location)
 		
+		//separate extractjob function 
+		job := extractJob(card)
+		jobs = append(jobs, job)
 	})
+	return jobs
+}
+//crete function taht only extracting job
+func extractJob(card *goquery.Selection) extractedJob {
+	id, _ := card.Attr("data-jk")
+	title := cleanString(card.Find(".title>a").Text())
+	location := cleanString(card.Find(".sjcl").Text())
+	salary := cleanString(card.Find(".salaryText").Text())
+	summary := cleanString(card.Find(".summary").Text()) 
+	//fmt.Println(id, title, location, salary, summary)
+	return extractedJob{
+		id:id, 
+		title: title, 
+		location: location, 
+		salary: salary, 
+		summary:summary,
+	}
+	
+}
+
+// create function that trim whitespace 
+func cleanString(str string) string{
+	//filed change string to array of string and join
+	return strings.Join(strings.Fields(strings.TrimSpace(str)), " ")
 }
 
 func getPages() int{
