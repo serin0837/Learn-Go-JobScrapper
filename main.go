@@ -1,53 +1,98 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-	"errors"
-	//"time"
+	"github.com/PuerkitoBio/goquery"
+	"fmt"
+	"log"
+	"strconv"
 )
 
-type result struct {
-	url string
-	status string
+//create struct
+type extractedJob struct {
+	id string
+	location string
+	title string
+	salary string
+	summary string
 }
-
-var errRequestFailed = errors.New("Request failed")
-
+//only start is change when I go to different page
+var baseURL string = "https://kr.indeed.com/jobs?q=python&limit=50"
 
 func main(){
-	
-	//channel result 
-	c := make(chan result)
-
-	urls := []string{
-	"https://www.airbnb.com/",
-	"https://www.google.com/",
-	"https://www.amazon.com/",
-	"https://www.reddit.com/",
-	"https://www.google.com/",
-	"https://soundcloud.com/",
-	"https://www.facebook.com/",
-	"https://www.instagram.com/",
+	totalPages := getPages()
+	//fmt.Println(totalPages)//5
+	//hit the url 
+	for i := 0; i < totalPages; i++{
+		getPage(i)
 	}
-	
-	for _,url := range urls {
-		go hitURL(url, c)
-	}
-	//this is same as fmt.Println(<-c) nine time
-	for i := 0; i<len(urls); i++{
-		fmt.Println(<-c)
-	}
-
 }
 
-func hitURL(url string, c chan<- result){
-	fmt.Println("Cheking:",url)
-	resp, err := http.Get(url)
-	status := "OK"
-	if err != nil || resp.StatusCode >= 400{
-		status = "FAILED"
-	}
-	c <- result{url:url, status: status}
+//create get page func
+func getPage(page int){
+	pageURL := baseURL + "&start=" + strconv.Itoa(page * 50)
+	//page*50 is number so we have to use pacakage
+	//print its wokring 
+	//fmt.Println("Resuqesiting", pageURL)
+	res, err := http.Get(pageURL)
+	checkErr(err)
+	checkCode(res)
+	defer res.Body.Close()
+	//goguery document//resbody is byte so we have to close 
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	searchCards := doc.Find(".jobsearch-SerpJobCard")
+	searchCards.Each(func(i int, s *goquery.Selection){
+		//each card I want to extract job
+		//s is each card (div)
+		//each card have id(data-jk)
+		//attr return two values, actual value and existence
+		id, _ := s.Attr("data-jk")
+		//print all of id
+		fmt.Println(id)
+		title := s.Find(".title>a").Text()
+		
+		location := s.Find(".sjcl").Text()
+		fmt.Println(title, location)
+		//clean white space
+		
+	})
 }
 
+func getPages() int{
+	pages := 0
+	res, err := http.Get(baseURL)
+	checkErr(err)
+	checkCode(res)
+
+	defer res.Body.Close()
+	//goguery document//resbody is byte so we have to close 
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	//fmt.Println(doc)
+	//pagination is class in that webpage
+	doc.Find(".pagination").Each(func(i int, s *goquery.Selection){
+		//I can see every tag of that class
+		//fmt.Println(s.Html())
+
+		// we want count links with a tag
+		//fmt.Println(s.Find("a").Length())
+		pages = s.Find("a").Length()
+	})
+	
+	return pages
+}
+
+func checkErr(err error){
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func checkCode(res *http.Response){
+	if res.StatusCode != 200{
+		log.Fatalln("request failed with Status:", res.StatusCode)
+	}
+}

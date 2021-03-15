@@ -257,6 +257,10 @@ func hitURL(url string, c chan<- result){
 really fast!!!!!!!!
 - take slowes url to finish time, and not waiting each url
 
-
+- start job scrapper project
 - go query
 intall go get github.com/PuerkitoBio/goquery
+
+use go guery 
+
+- how go query works, we need to continuosly check the error so create checkerror func
